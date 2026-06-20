@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>育休・子育て家計シミュレーター</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6fb;
+      color: #172033;
+    }
+    .app {
+      width: min(100%, 980px);
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .hero {
+      text-align: center;
+      padding: 24px 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #e7efff;
+      color: #2254a3;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    h1 { margin: 12px 0 8px; font-size: 30px; }
+    h2 { margin: 0 0 16px; font-size: 20px; }
+    p { line-height: 1.7; color: #526070; }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(30, 45, 80, 0.08);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    label {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #39465a;
+    }
+    input, select {
+      width: 100%;
+      font: inherit;
+      border: 1px solid #d8deea;
+      border-radius: 14px;
+      padding: 13px 14px;
+      background: #fbfcff;
+      color: #172033;
+    }
+    input:focus, select:focus {
+      outline: 3px solid #dbe8ff;
+      border-color: #6b9df7;
+    }
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 16px;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: 800;
+      background: #2254a3;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .result-item {
+      padding: 14px;
+      border-radius: 16px;
+      background: #f7f9fd;
+    }
+    .result-item span {
+      display: block;
+      color: #657184;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .result-item strong {
+      font-size: 18px;
+    }
+    .total {
+      background: #172033;
+      color: white;
+    }
+    .total .result-item {
+      background: rgba(255,255,255,0.08);
+    }
+    .total .result-item span { color: #c8d1e3; }
+    .warning strong { color: #ffd27d; }
+    .note {
+      font-size: 13px;
+      color: #526070;
+      padding-bottom: 32px;
+    }
+    @media (max-width: 720px) {
+      .grid, .result-grid { grid-template-columns: 1fr; }
+      .app { padding: 12px; }
+      h1 { font-size: 26px; }
+      .card { padding: 18px; border-radius: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <section class="hero">
+      <div class="badge">無料Web版・スマホ対応</div>
+      <h1>育休・子育て家計シミュレーター</h1>
+      <p>夫婦の月収・賞与・育休期間・住宅ローン・保育料から、育休中の家計影響をざっくり試算します。</p>
+    </section>
+
+    <section class="card">
+      <h2>共通情報</h2>
+      <label>出産予定日
+        <input id="dueDate" type="date">
+      </label>
+    </section>
+
+    <section class="grid">
+      <section class="card">
+        <h2>夫</h2>
+        <label>月収・額面<input id="hMonthly" type="number" value="450000"></label>
+        <label>年間賞与・額面<input id="hBonus" type="number" value="1200000"></label>
+        <label>賞与支給月<input id="hBonusMonth" type="month"></label>
+        <label>育休開始日<input id="hLeaveStart" type="date"></label>
+        <label>育休終了日<input id="hLeaveEnd" type="date"></label>
+        <label>住宅ローン残高<input id="hLoan" type="number" value="30000000"></label>
+      </section>
+
+      <section class="card">
+        <h2>妻</h2>
+        <label>月収・額面<input id="wMonthly" type="number" value="450000"></label>
+        <label>年間賞与・額面<input id="wBonus" type="number" value="1200000"></label>
+        <label>賞与支給月<input id="wBonusMonth" type="month"></label>
+        <label>育休開始日<input id="wLeaveStart" type="date"></label>
+        <label>育休終了日<input id="wLeaveEnd" type="date"></label>
+        <label>住宅ローン残高<input id="wLoan" type="number" value="30000000"></label>
+      </section>
+    </section>
+
+    <section class="card">
+      <h2>保育料</h2>
+      <label>子どもの年齢区分
+        <select id="childAge">
+          <option>0〜2歳</option>
+          <option>3〜5歳</option>
+        </select>
+      </label>
+      <label>現在の月額保育料<input id="currentFee" type="number" value="50000"></label>
+      <label>育休後に想定される月額保育料<input id="reducedFee" type="number" value="30000"></label>
+      <label>減額が続く月数<input id="feeMonths" type="number" value="12"></label>
+    </section>
+
+    <button onclick="calculate()">試算する</button>
+
+    <section class="card">
+      <h2>夫の試算</h2>
+      <div id="husbandResult" class="result-grid"></div>
+    </section>
+
+    <section class="card">
+      <h2>妻の試算</h2>
+      <div id="wifeResult" class="result-grid"></div>
+    </section>
+
+    <section class="card total">
+      <h2>世帯合計</h2>
+      <div id="totalResult" class="result-grid"></div>
+    </section>
+
+    <section class="note">
+      <p>
+        ※このシミュレーターは概算です。育児休業給付金、出生後休業支援給付金、出産手当金、社会保険料免除、住宅ローン控除、保育料は、勤務先・自治体・制度改正・個別条件により変わります。
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const CONFIG = {
+      monthlyWageCap: 470700,
+      monthlyBenefitCap67: 315369,
+      monthlyBenefitCap50: 235350,
+      socialInsuranceRate: 0.145,
+      maternityAllowanceRate: 2 / 3,
+      birthSupportRate: 0.13,
+      housingLoanDeductionRate: 0.007
+    };
+
+    const yen = (v) => Math.round(v || 0).toLocaleString("ja-JP", {
+      style: "currency",
+      currency: "JPY",
+      maximumFractionDigits: 0
+    });
+
+    const get = (id) => document.getElementById(id).value;
+    const num = (id) => Number(get(id)) || 0;
+    const dayMs = 1000 * 60 * 60 * 24;
+
+    function addDays(dateString, days) {
+      if (!dateString) return "";
+      const d = new Date(dateString);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function daysBetween(start, end) {
+      if (!start || !end) return 0;
+      const s = new Date(start);
+      const e = new Date(end);
+      if (Number.isNaN(s) || Number.isNaN(e) || e < s) return 0;
+      return Math.floor((e - s) / dayMs) + 1;
+    }
+
+    function getMonthEnd(year, monthIndex) {
+      return new Date(year, monthIndex + 1, 0);
+    }
+
+    function countMonthEndIncludedMonths(start, end) {
+      if (!start || !end) return 0;
+      const s = new Date(start);
+      const e = new Date(end);
+      if (e < s) return 0;
+
+      let count = 0;
+      const cursor = new Date(s.getFullYear(), s.getMonth(), 1);
+
+      while (cursor <= e) {
+        const monthEnd = getMonthEnd(cursor.getFullYear(), cursor.getMonth());
+        if (s <= monthEnd && monthEnd <= e) count++;
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      return count;
+    }
+
+    function includesMonthEnd(start, end, ym) {
+      if (!start || !end || !ym) return false;
+      const [year, month] = ym.split("-").map(Number);
+      const monthEnd = getMonthEnd(year, month - 1);
+      return new Date(start) <= monthEnd && monthEnd <= new Date(end);
+    }
+
+    function calcBonusExemption(bonus, bonusMonth, leaveStart, leaveEnd) {
+      const leaveDays = daysBetween(leaveStart, leaveEnd);
+      if (leaveDays > 30 && includesMonthEnd(leaveStart, leaveEnd, bonusMonth)) {
+        return bonus * CONFIG.socialInsuranceRate;
+      }
+      return 0;
+    }
+
+    function calcMaternity(dueDate, monthlySalary) {
+      if (!dueDate) return { start: "-", end: "-", days: 0, allowance: 0, exemption: 0 };
+      const start = addDays(dueDate, -42);
+      const end = addDays(dueDate, 56);
+      const days = daysBetween(start, end);
+      const allowance = (monthlySalary / 30) * days * CONFIG.maternityAllowanceRate;
+      const exemption = countMonthEndIncludedMonths(start, end) * monthlySalary * CONFIG.socialInsuranceRate;
+      return { start, end, days, allowance, exemption };
+    }
+
+    function calcBirthSupport(monthlySalary, leaveStart, leaveEnd, dueDate, spouseStart, spouseEnd) {
+      if (!dueDate || !leaveStart || !leaveEnd || !spouseStart || !spouseEnd) return 0;
+      const windowStart = dueDate;
+      const windowEnd = addDays(dueDate, 56);
+
+      const ownDays = daysBetween(
+        leaveStart > windowStart ? leaveStart : windowStart,
+        leaveEnd < windowEnd ? leaveEnd : windowEnd
+      );
+
+      const spouseDays = daysBetween(
+        spouseStart > windowStart ? spouseStart : windowStart,
+        spouseEnd < windowEnd ? spouseEnd : windowEnd
+      );
+
+      if (ownDays < 14 || spouseDays < 14) return 0;
+      const supportDays = Math.min(ownDays, 28);
+      const cappedMonthly = Math.min(monthlySalary, CONFIG.monthlyWageCap);
+      return (cappedMonthly / 30) * supportDays * CONFIG.birthSupportRate;
+    }
+
+    function calcPerson(prefix, dueDate, spousePrefix, isMother) {
+      const monthly = num(prefix + "Monthly");
+      const bonus = num(prefix + "Bonus");
+      const bonusMonth = get(prefix + "BonusMonth");
+      const leaveStart = get(prefix + "LeaveStart");
+      const leaveEnd = get(prefix + "LeaveEnd");
+      const loan = num(prefix + "Loan");
+      const spouseStart = get(spousePrefix + "LeaveStart");
+      const spouseEnd = get(spousePrefix + "LeaveEnd");
+
+      const leaveDays = daysBetween(leaveStart, leaveEnd);
+      const leaveMonths = leaveDays / 30;
+      const cappedMonthly = Math.min(monthly, CONFIG.monthlyWageCap);
+
+      const firstDays = Math.min(leaveDays, 180);
+      const secondDays = Math.max(leaveDays - 180, 0);
+
+      const monthlyBenefit67 = Math.min(cappedMonthly * 0.67, CONFIG.monthlyBenefitCap67);
+      const monthlyBenefit50 = Math.min(cappedMonthly * 0.5, CONFIG.monthlyBenefitCap50);
+
+      const benefit = (monthlyBenefit67 / 30) * firstDays + (monthlyBenefit50 / 30) * secondDays;
+      const birthSupport = calcBirthSupport(monthly, leaveStart, leaveEnd, dueDate, spouseStart, spouseEnd);
+
+      const monthlyExemption = countMonthEndIncludedMonths(leaveStart, leaveEnd) * monthly * CONFIG.socialInsuranceRate;
+      const bonusExemption = calcBonusExemption(bonus, bonusMonth, leaveStart, leaveEnd);
+      const maternity = isMother ? calcMaternity(dueDate, monthly) : { start: "-", end: "-", days: 0, allowance: 0, exemption: 0 };
+
+      const socialExemption = monthlyExemption + bonusExemption + maternity.exemption;
+      const normalTakeHome = (monthly * 12 + bonus) * 0.75;
+      const salaryLost = monthly * leaveMonths;
+      const leaveTakeHome = normalTakeHome - salaryLost * 0.75 + benefit + birthSupport + maternity.allowance + socialExemption;
+
+      const housingDeduction = loan * CONFIG.housingLoanDeductionRate;
+      const taxCapacity = Math.max(0, leaveTakeHome * 0.12);
+      const unusedHousingDeduction = Math.max(0, housingDeduction - taxCapacity);
+
+      return {
+        leaveDays, leaveMonths, benefit, birthSupport, maternity,
+        monthlyExemption, bonusExemption, socialExemption,
+        normalTakeHome, leaveTakeHome, housingDeduction, unusedHousingDeduction
+      };
+    }
+
+    function item(label, value, warning = false) {
+      return `<div class="result-item ${warning ? "warning" : ""}"><span>${label}</span><strong>${value}</strong></div>`;
+    }
+
+    function renderPerson(id, r, isMother) {
+      let html = "";
+      html += item("育休日数", Math.round(r.leaveDays) + "日");
+      html += item("育休月数", r.leaveMonths.toFixed(1) + "か月");
+      html += item("育児休業給付金", yen(r.benefit));
+      html += item("出生後休業支援給付金", yen(r.birthSupport));
+      if (isMother) {
+        html += item("産休期間", r.maternity.start + "〜" + r.maternity.end);
+        html += item("出産手当金概算", yen(r.maternity.allowance));
+      }
+      html += item("月額社保免除", yen(r.monthlyExemption));
+      html += item("賞与社保免除", yen(r.bonusExemption));
+      html += item("社保免除合計", yen(r.socialExemption));
+      html += item("育休あり年間手取り", yen(r.leaveTakeHome));
+      html += item("住宅ローン控除目安", yen(r.housingDeduction));
+      html += item("控除を使い切れない可能性", yen(r.unusedHousingDeduction), true);
+      document.getElementById(id).innerHTML = html;
+    }
+
+    function calculate() {
+      const dueDate = get("dueDate");
+      const h = calcPerson("h", dueDate, "w", false);
+      const w = calcPerson("w", dueDate, "h", true);
+
+      const feeSaving = Math.max(0, num("currentFee") - num("reducedFee")) * num("feeMonths");
+      const totalTakeHome = h.leaveTakeHome + w.leaveTakeHome;
+      const totalWithFee = totalTakeHome + feeSaving;
+
+      renderPerson("husbandResult", h, false);
+      renderPerson("wifeResult", w, true);
+
+      let totalHtml = "";
+      totalHtml += item("育休あり年間手取り", yen(totalTakeHome));
+      totalHtml += item("育休＋保育料減額込み", yen(totalWithFee));
+      totalHtml += item("育児休業給付金", yen(h.benefit + w.benefit));
+      totalHtml += item("出生後休業支援給付金", yen(h.birthSupport + w.birthSupport));
+      totalHtml += item("社会保険料免除", yen(h.socialExemption + w.socialExemption));
+      totalHtml += item("保育料減額効果", yen(feeSaving));
+      totalHtml += item("住宅ローン控除を使い切れない可能性", yen(h.unusedHousingDeduction + w.unusedHousingDeduction), true);
+      document.getElementById("totalResult").innerHTML = totalHtml;
+    }
+
+    calculate();
+  </script>
+</body>
+</html>
